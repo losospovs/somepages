@@ -14,14 +14,14 @@
   @keyframes lampFlicker { 0%,100% { opacity:.25; filter:brightness(0.6); } 50% { opacity:1; filter:brightness(1.6); } }
   .stage { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; }
   
-  /* Исходный блюр уменьшен с 6px до 2px для мягкого эффекта */
-  .number { font-size:42vw; line-height:1; font-weight:900; letter-spacing:-0.02em; color:var(--text-color); -webkit-text-stroke:0.4vw rgba(255,255,255,0.15); text-shadow: 0 0 2vw rgba(255,225,77,0.9), 0 0 6vw rgba(255,80,220,0.6), 0 0 10vw rgba(80,160,255,0.4); transform:scale(0.4); opacity:0; filter:blur(2px); }
+  /* Убран filter: blur со стартовой позиции цифры */
+  .number { font-size:42vw; line-height:1; font-weight:900; letter-spacing:-0.02em; color:var(--text-color); -webkit-text-stroke:0.4vw rgba(255,255,255,0.15); text-shadow: 0 0 2vw rgba(255,225,77,0.9), 0 0 6vw rgba(255,80,220,0.6), 0 0 10vw rgba(80,160,255,0.4); transform:scale(0.4); opacity:0; }
   .number.reveal { animation:popIn 0.65s cubic-bezier(.17,.89,.32,1.49) forwards; }
   
-  /* Начальный блюр при вылете уменьшен с 10px до 3px */
-  @keyframes popIn { 0% { transform:scale(0.3) rotate(-6deg); opacity:0; filter:blur(3px); } 60% { transform:scale(1.12) rotate(2deg); opacity:1; filter:blur(0); } 100% { transform:scale(1) rotate(0deg); opacity:1; filter:blur(0); } }
+  /* Убран filter: blur из ключевых кадров анимации вылета цифры */
+  @keyframes popIn { 0% { transform:scale(0.3) rotate(-6deg); opacity:0; } 60% { transform:scale(1.12) rotate(2deg); opacity:1; } 100% { transform:scale(1) rotate(0deg); opacity:1; } }
   
-  /* Принудительно убираем блюр (filter: none), чтобы при миксинге цифры были четкими */
+  /* Чёткие цифры во время прокрутки и миксинга */
   .number.spin { animation:spinPulse 0.09s linear infinite; filter: none; }
   @keyframes spinPulse { 0%,100% { transform:scale(1); opacity:.55; } 50% { transform:scale(1.03); opacity:1; } }
   
@@ -31,6 +31,7 @@
   .flash.go { animation:flashOut 0.4s ease-out forwards; }
   @keyframes flashOut { 0% { opacity:0.9; } 100% { opacity:0; } }
 </style>
+
 
 </head>
 <body>
