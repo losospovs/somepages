@@ -6,9 +6,8 @@
 <title>Number Randomizer</title>
 <style>
   :root{
-    --bg1:#05010d;
-    --bg2:#0d0320;
-    --accent:#ffe14d;
+    --bg-color: transparent;
+    --text-color: #ffffff;
   }
   html,body{
     margin:0;
@@ -16,7 +15,7 @@
     width:100%;
     height:100%;
     overflow:hidden;
-    background:radial-gradient(ellipse at center, var(--bg2) 0%, var(--bg1) 70%);
+    background: var(--bg-color);
     font-family:'Arial Black','Segoe UI',Helvetica,Arial,sans-serif;
   }
 
@@ -62,7 +61,7 @@
     line-height:1;
     font-weight:900;
     letter-spacing:-0.02em;
-    color:#ffffff;
+    color: var(--text-color);
     -webkit-text-stroke:0.4vw rgba(255,255,255,0.15);
     text-shadow:
       0 0 2vw rgba(255,225,77,0.9),
@@ -143,41 +142,6 @@
 
 <script src="config.js"></script>
 <script>
-/* =====================================================================
-   NUMBER RANDOMIZER — built for FreeShow (reload-triggered, no UI)
-   ---------------------------------------------------------------------
-   Control the range from FreeShow by setting the output URL with query
-   parameters, e.g.:
-
-     file.html?min=1&max=100
-     file.html?min=10&max=50&confetti=0
-     file.html?min=1&max=6&lamps=0&spin=600
-
-   Supported params (all optional):
-     min        lowest possible number      (default 1)
-     max        highest possible number     (default 100)
-     spin       spin animation length in ms (default 900)
-     confetti   1 or 0, show confetti burst (default 1)
-     lamps      1 or 0, show flashing lamp border (default 1)
-     label      1 or 0, show "min - max" label at top (default 1)
-     seed       optional fixed number for testing, skips randomness
-
-   Every time FreeShow reloads this page (slide change / page trigger),
-   a brand new number is drawn and the animation replays automatically.
-
-   ---------------------------------------------------------------------
-   ALTERNATIVE CONTROL: config.js
-   ---------------------------------------------------------------------
-   Easiest way to control the range without touching URLs or browsers:
-   open config.js (same folder, loaded via <script src> above) in any
-   plain text editor, change the numbers/true-false values, save. The
-   next time FreeShow reloads this page it picks up the new values
-   automatically — no browser tab, no clicking a URL needed.
-
-   Priority order: URL param (if present) > config.js > localStorage
-   (legacy, set via settings.html if you have one) > built-in default.
-   ===================================================================== */
-
   const params = new URLSearchParams(window.location.search);
   const cfg = window.RANDOMIZER_CONFIG || {};
 
@@ -207,14 +171,51 @@
   const SHOW_LABEL = pickBool(params.get('label'), cfg.label, stored.label, true);
   const SEED = params.get('seed');
 
+  // Установка кастомных цветов из параметров URL
+  if (params.has('bg')) {
+    document.documentElement.style.setProperty('--bg-color', params.get('bg'));
+  }
+  if (params.has('color')) {
+    document.documentElement.style.setProperty('--text-color', params.get('color'));
+  }
+
   function randomInRange(lo, hi){
     if(lo > hi){ [lo, hi] = [hi, lo]; }
     return Math.floor(Math.random() * (hi - lo + 1)) + lo;
   }
 
-  const finalNumber = SEED !== null && SEED !== '' && !isNaN(SEED)
-    ? parseInt(SEED, 10)
-    : randomInRange(rangeMin, rangeMax);
+  let finalNumber = 0;
+
+  if (SEED !== null && SEED !== '' && !isNaN(SEED)) {
+    finalNumber = parseInt(SEED, 10);
+  } else {
+    const allNumbers =;
+    for (let i = rangeMin; i <= rangeMax; i++) { allNumbers.push(i); }
+
+    const historyKey = `fs_gh_history_${rangeMin}_${rangeMax}`;
+    let usedNumbers =;
+    try {
+      const storedHistory = localStorage.getItem(historyKey);
+      if (storedHistory) usedNumbers = JSON.parse(storedHistory);
+    } catch (e) { console.error(e); }
+
+    let availableNumbers = allNumbers.filter(n => !usedNumbers.includes(n));
+
+    if (availableNumbers.length === 0) {
+      let lastPicked = usedNumbers.length > 0 ? usedNumbers[usedNumbers.length - 1] : null;
+      usedNumbers =;
+      availableNumbers = allNumbers.filter(n => n !== lastPicked);
+      if (availableNumbers.length === 0) availableNumbers = [...allNumbers];
+    }
+
+    const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+    finalNumber = availableNumbers[randomIndex];
+
+    usedNumbers.push(finalNumber);
+    try {
+      localStorage.setItem(historyKey, JSON.stringify(usedNumbers));
+    } catch (e) { console.error(e); }
+  }
 
   const numberEl = document.getElementById('number');
   const labelEl = document.getElementById('rangeLabel');
@@ -253,7 +254,6 @@
   /* ---------- Number spin then reveal ---------- */
   function runNumberSequence(){
     numberEl.classList.add('spin');
-    const spinStart = performance.now();
     const spinInterval = setInterval(() => {
       numberEl.textContent = randomInRange(rangeMin, rangeMax);
     }, 45);
@@ -263,86 +263,72 @@
       numberEl.classList.remove('spin');
       numberEl.textContent = finalNumber;
       numberEl.classList.add('reveal');
+
       flashEl.classList.add('go');
-      if (SHOW_CONFETTI) burstConfetti();
+
+      if (SHOW_CONFETTI) {
+        triggerConfetti();
+      }
     }, spinDuration);
   }
 
-  /* ---------- Confetti (pure canvas, no deps) ---------- */
-  function burstConfetti(){
+  /* ---------- Confetti ---------- */
+  function triggerConfetti() {
     const canvas = document.getElementById('fx');
     const ctx = canvas.getContext('2d');
-    const DPR = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    function resize(){
-      canvas.width = window.innerWidth * DPR;
-      canvas.height = window.innerHeight * DPR;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-      ctx.setTransform(DPR,0,0,DPR,0,0);
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    const colors = ['#ff4d6d','#ffe14d','#4dd0ff','#8cff4d','#ff8c4d','#c04dff','#ffffff'];
-    const pieces = [];
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    const total = Math.min(260, Math.floor(W / 4));
-
-    for (let i = 0; i < total; i++){
-      pieces.push({
-        x: Math.random() * W,
-        y: -20 - Math.random() * H * 0.5,
-        w: 6 + Math.random() * 8,
-        h: 10 + Math.random() * 14,
+    let particles =;
+    const colors = ['#ff4d6d', '#ffe14d', '#4dd0ff', '#8cff4d', '#ff8c4d', '#c04dff'];
+    
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height * 0.65,
+        vx: (Math.random() - 0.5) * 18,
+        vy: (Math.random() - 1) * 16 - 6,
+        size: Math.random() * 8 + 4,
         color: colors[Math.floor(Math.random() * colors.length)],
-        rot: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() - 0.5) * 0.3,
-        vy: 2 + Math.random() * 4,
-        vx: (Math.random() - 0.5) * 2.5,
-        sway: Math.random() * Math.PI * 2
+        gravity: 0.38,
+        rotation: Math.random() * Math.PI,
+        rotationSpeed: (Math.random() - 0.5) * 0.2
       });
     }
 
-    let running = true;
-    const startTime = performance.now();
-    const maxDuration = 6000;
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let anyAlive = false;
 
-    function frame(now){
-      if (!running) return;
-      ctx.clearRect(0, 0, W, H);
-      let anyVisible = false;
-
-      pieces.forEach(p => {
-        p.sway += 0.05;
-        p.x += p.vx + Math.sin(p.sway) * 0.8;
+      particles.forEach(p => {
+        p.x += p.vx;
         p.y += p.vy;
-        p.rot += p.rotSpeed;
+        p.vy += p.gravity;
+        p.rotation += p.rotationSpeed;
 
-        if (p.y < H + 30) anyVisible = true;
+        if (p.y < canvas.height + 20) anyAlive = true;
 
         ctx.save();
         ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
+        ctx.rotate(p.rotation);
         ctx.fillStyle = p.color;
-        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
         ctx.restore();
       });
 
-      if (anyVisible && (now - startTime) < maxDuration){
-        requestAnimationFrame(frame);
+      if (anyAlive) {
+        requestAnimationFrame(update);
       } else {
-        running = false;
-        ctx.clearRect(0, 0, W, H);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
     }
-    requestAnimationFrame(frame);
+    update();
   }
 
-  buildLamps();
-  window.addEventListener('DOMContentLoaded', runNumberSequence);
-  if (document.readyState !== 'loading') runNumberSequence();
+  window.addEventListener('DOMContentLoaded', () => {
+    buildLamps();
+    runNumberSequence();
+  });
 </script>
 </body>
 </html>
