@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Randomizer</title>
+<style>
+  :root{
+    --bg1:#05010d;
+    --bg2:#0d0320;
+    --accent:#ffe14d;
+  }
+  html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:radial-gradient(ellipse at center, var(--bg2) 0%, var(--bg1) 70%);
+    font-family:'Arial Black','Segoe UI',Helvetica,Arial,sans-serif;
+  }
+
+  /* ---------- Lamp border ---------- */
+  .lamp-row{
+    position:fixed;
+    left:0; right:0;
+    display:flex;
+    justify-content:space-between;
+    padding:0 1.2vw;
+    box-sizing:border-box;
+    z-index:5;
+    pointer-events:none;
+  }
+  .lamp-row.top{ top:1.2vh; }
+  .lamp-row.bottom{ bottom:1.2vh; }
+  .lamp{
+    width:1.6vw;
+    height:1.6vw;
+    min-width:10px;
+    min-height:10px;
+    border-radius:50%;
+    background:#333;
+    box-shadow:0 0 4px rgba(0,0,0,.6);
+    animation:lampFlicker 1.1s infinite ease-in-out;
+  }
+  @keyframes lampFlicker{
+    0%,100%{ opacity:.25; filter:brightness(0.6); }
+    50%{ opacity:1; filter:brightness(1.6); }
+  }
+
+  /* ---------- Number stage ---------- */
+  .stage{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:3;
+  }
+  .number{
+    font-size:42vw;
+    line-height:1;
+    font-weight:900;
+    letter-spacing:-0.02em;
+    color:#ffffff;
+    -webkit-text-stroke:0.4vw rgba(255,255,255,0.15);
+    text-shadow:
+      0 0 2vw rgba(255,225,77,0.9),
+      0 0 6vw rgba(255,80,220,0.6),
+      0 0 10vw rgba(80,160,255,0.4);
+    transform:scale(0.4);
+    opacity:0;
+    filter:blur(6px);
+    transition:none;
+  }
+  .number.reveal{
+    animation:popIn 0.65s cubic-bezier(.17,.89,.32,1.49) forwards;
+  }
+  @keyframes popIn{
+    0%{ transform:scale(0.3) rotate(-6deg); opacity:0; filter:blur(10px); }
+    60%{ transform:scale(1.12) rotate(2deg); opacity:1; filter:blur(0); }
+    100%{ transform:scale(1) rotate(0deg); opacity:1; filter:blur(0); }
+  }
+  .number.spin{
+    animation:spinPulse 0.09s linear infinite;
+  }
+  @keyframes spinPulse{
+    0%{ transform:scale(1); opacity:.55; }
+    50%{ transform:scale(1.03); opacity:1; }
+    100%{ transform:scale(1); opacity:.55; }
+  }
+
+  .label{
+    position:fixed;
+    top:6vh;
+    left:0; right:0;
+    text-align:center;
+    z-index:4;
+    color:rgba(255,255,255,0.65);
+    font-size:2.4vw;
+    letter-spacing:0.5vw;
+    text-transform:uppercase;
+    font-weight:700;
+  }
+
+  canvas#fx{
+    position:fixed;
+    inset:0;
+    z-index:6;
+    pointer-events:none;
+  }
+
+  .flash{
+    position:fixed;
+    inset:0;
+    background:#fff;
+    opacity:0;
+    z-index:7;
+    pointer-events:none;
+  }
+  .flash.go{
+    animation:flashOut 0.4s ease-out forwards;
+  }
+  @keyframes flashOut{
+    0%{ opacity:0.9; }
+    100%{ opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="lamp-row top" id="lampsTop"></div>
+  <div class="lamp-row bottom" id="lampsBottom"></div>
+
+  <div class="label" id="rangeLabel"></div>
+
+  <div class="stage">
+    <div class="number" id="number">0</div>
+  </div>
+
+  <canvas id="fx"></canvas>
+  <div class="flash" id="flash"></div>
+
+<script src="config.js"></script>
+<script>
+/* =====================================================================
+   NUMBER RANDOMIZER — built for FreeShow (reload-triggered, no UI)
+   ---------------------------------------------------------------------
+   Control the range from FreeShow by setting the output URL with query
+   parameters, e.g.:
+
+     file.html?min=1&max=100
+     file.html?min=10&max=50&confetti=0
+     file.html?min=1&max=6&lamps=0&spin=600
+
+   Supported params (all optional):
+     min        lowest possible number      (default 1)
+     max        highest possible number     (default 100)
+     spin       spin animation length in ms (default 900)
+     confetti   1 or 0, show confetti burst (default 1)
+     lamps      1 or 0, show flashing lamp border (default 1)
+     label      1 or 0, show "min - max" label at top (default 1)
+     seed       optional fixed number for testing, skips randomness
+
+   Every time FreeShow reloads this page (slide change / page trigger),
+   a brand new number is drawn and the animation replays automatically.
+
+   ---------------------------------------------------------------------
+   ALTERNATIVE CONTROL: config.js
+   ---------------------------------------------------------------------
+   Easiest way to control the range without touching URLs or browsers:
+   open config.js (same folder, loaded via <script src> above) in any
+   plain text editor, change the numbers/true-false values, save. The
+   next time FreeShow reloads this page it picks up the new values
+   automatically — no browser tab, no clicking a URL needed.
+
+   Priority order: URL param (if present) > config.js > localStorage
+   (legacy, set via settings.html if you have one) > built-in default.
+   ===================================================================== */
+
+  const params = new URLSearchParams(window.location.search);
+  const cfg = window.RANDOMIZER_CONFIG || {};
+
+  let stored = {};
+  try {
+    stored = JSON.parse(localStorage.getItem('randomizerSettings') || '{}');
+  } catch (e) { stored = {}; }
+
+  function pick(paramVal, cfgVal, storedVal, fallback){
+    if (paramVal !== null && paramVal !== '' && !isNaN(paramVal)) return parseInt(paramVal, 10);
+    if (cfgVal !== undefined && cfgVal !== null && cfgVal !== '' && !isNaN(cfgVal)) return parseInt(cfgVal, 10);
+    if (storedVal !== undefined && storedVal !== null && storedVal !== '' && !isNaN(storedVal)) return parseInt(storedVal, 10);
+    return fallback;
+  }
+  function pickBool(paramVal, cfgVal, storedVal, fallback){
+    if (paramVal !== null) return paramVal !== '0';
+    if (cfgVal !== undefined && cfgVal !== null) return !!cfgVal;
+    if (storedVal !== undefined && storedVal !== null) return !!storedVal;
+    return fallback;
+  }
+
+  const rangeMin = pick(params.get('min'), cfg.min, stored.min, 1);
+  const rangeMax = pick(params.get('max'), cfg.max, stored.max, 100);
+  const spinDuration = pick(params.get('spin'), cfg.spin, stored.spin, 900);
+  const SHOW_CONFETTI = pickBool(params.get('confetti'), cfg.confetti, stored.confetti, true);
+  const SHOW_LAMPS = pickBool(params.get('lamps'), cfg.lamps, stored.lamps, true);
+  const SHOW_LABEL = pickBool(params.get('label'), cfg.label, stored.label, true);
+  const SEED = params.get('seed');
+
+  function randomInRange(lo, hi){
+    if(lo > hi){ [lo, hi] = [hi, lo]; }
+    return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+  }
+
+  const finalNumber = SEED !== null && SEED !== '' && !isNaN(SEED)
+    ? parseInt(SEED, 10)
+    : randomInRange(rangeMin, rangeMax);
+
+  const numberEl = document.getElementById('number');
+  const labelEl = document.getElementById('rangeLabel');
+  const flashEl = document.getElementById('flash');
+
+  if (SHOW_LABEL){
+    labelEl.textContent = rangeMin + ' – ' + rangeMax;
+  }
+
+  /* ---------- Lamp border build ---------- */
+  function buildLamps(){
+    const top = document.getElementById('lampsTop');
+    const bottom = document.getElementById('lampsBottom');
+    if (!SHOW_LAMPS){
+      top.style.display = 'none';
+      bottom.style.display = 'none';
+      return;
+    }
+    const colors = ['#ff4d6d','#ffe14d','#4dd0ff','#8cff4d','#ff8c4d','#c04dff'];
+    const count = 26;
+    for (let i = 0; i < count; i++){
+      const c = colors[i % colors.length];
+      const lampT = document.createElement('div');
+      lampT.className = 'lamp';
+      lampT.style.background = c;
+      lampT.style.boxShadow = `0 0 1.4vw ${c}`;
+      lampT.style.animationDelay = (Math.random() * 1.1).toFixed(2) + 's';
+      top.appendChild(lampT);
+
+      const lampB = lampT.cloneNode();
+      lampB.style.animationDelay = (Math.random() * 1.1).toFixed(2) + 's';
+      bottom.appendChild(lampB);
+    }
+  }
+
+  /* ---------- Number spin then reveal ---------- */
+  function runNumberSequence(){
+    numberEl.classList.add('spin');
+    const spinStart = performance.now();
+    const spinInterval = setInterval(() => {
+      numberEl.textContent = randomInRange(rangeMin, rangeMax);
+    }, 45);
+
+    setTimeout(() => {
+      clearInterval(spinInterval);
+      numberEl.classList.remove('spin');
+      numberEl.textContent = finalNumber;
+      numberEl.classList.add('reveal');
+      flashEl.classList.add('go');
+      if (SHOW_CONFETTI) burstConfetti();
+    }, spinDuration);
+  }
+
+  /* ---------- Confetti (pure canvas, no deps) ---------- */
+  function burstConfetti(){
+    const canvas = document.getElementById('fx');
+    const ctx = canvas.getContext('2d');
+    const DPR = window.devicePixelRatio || 1;
+
+    function resize(){
+      canvas.width = window.innerWidth * DPR;
+      canvas.height = window.innerHeight * DPR;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const colors = ['#ff4d6d','#ffe14d','#4dd0ff','#8cff4d','#ff8c4d','#c04dff','#ffffff'];
+    const pieces = [];
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const total = Math.min(260, Math.floor(W / 4));
+
+    for (let i = 0; i < total; i++){
+      pieces.push({
+        x: Math.random() * W,
+        y: -20 - Math.random() * H * 0.5,
+        w: 6 + Math.random() * 8,
+        h: 10 + Math.random() * 14,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rot: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.3,
+        vy: 2 + Math.random() * 4,
+        vx: (Math.random() - 0.5) * 2.5,
+        sway: Math.random() * Math.PI * 2
+      });
+    }
+
+    let running = true;
+    const startTime = performance.now();
+    const maxDuration = 6000;
+
+    function frame(now){
+      if (!running) return;
+      ctx.clearRect(0, 0, W, H);
+      let anyVisible = false;
+
+      pieces.forEach(p => {
+        p.sway += 0.05;
+        p.x += p.vx + Math.sin(p.sway) * 0.8;
+        p.y += p.vy;
+        p.rot += p.rotSpeed;
+
+        if (p.y < H + 30) anyVisible = true;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+      });
+
+      if (anyVisible && (now - startTime) < maxDuration){
+        requestAnimationFrame(frame);
+      } else {
+        running = false;
+        ctx.clearRect(0, 0, W, H);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  buildLamps();
+  window.addEventListener('DOMContentLoaded', runNumberSequence);
+  if (document.readyState !== 'loading') runNumberSequence();
+</script>
+</body>
+</html>
