@@ -13,17 +13,25 @@
   .lamp { width:1.6vw; height:1.6vw; min-width:10px; min-height:10px; border-radius:50%; background:#333; box-shadow:0 0 4px rgba(0,0,0,.6); animation:lampFlicker 1.1s infinite ease-in-out; }
   @keyframes lampFlicker { 0%,100% { opacity:.25; filter:brightness(0.6); } 50% { opacity:1; filter:brightness(1.6); } }
   .stage { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; }
-  .number { font-size:42vw; line-height:1; font-weight:900; letter-spacing:-0.02em; color:var(--text-color); -webkit-text-stroke:0.4vw rgba(255,255,255,0.15); text-shadow: 0 0 2vw rgba(255,225,77,0.9), 0 0 6vw rgba(255,80,220,0.6), 0 0 10vw rgba(80,160,255,0.4); transform:scale(0.4); opacity:0; filter:blur(6px); }
+  
+  /* Исходный блюр уменьшен с 6px до 2px для мягкого эффекта */
+  .number { font-size:42vw; line-height:1; font-weight:900; letter-spacing:-0.02em; color:var(--text-color); -webkit-text-stroke:0.4vw rgba(255,255,255,0.15); text-shadow: 0 0 2vw rgba(255,225,77,0.9), 0 0 6vw rgba(255,80,220,0.6), 0 0 10vw rgba(80,160,255,0.4); transform:scale(0.4); opacity:0; filter:blur(2px); }
   .number.reveal { animation:popIn 0.65s cubic-bezier(.17,.89,.32,1.49) forwards; }
-  @keyframes popIn { 0% { transform:scale(0.3) rotate(-6deg); opacity:0; filter:blur(2px); } 60% { transform:scale(1.12) rotate(2deg); opacity:1; filter:blur(0); } 100% { transform:scale(1) rotate(0deg); opacity:1; filter:blur(0); } }
-  .number.spin { animation:spinPulse 0.09s linear infinite; }
+  
+  /* Начальный блюр при вылете уменьшен с 10px до 3px */
+  @keyframes popIn { 0% { transform:scale(0.3) rotate(-6deg); opacity:0; filter:blur(3px); } 60% { transform:scale(1.12) rotate(2deg); opacity:1; filter:blur(0); } 100% { transform:scale(1) rotate(0deg); opacity:1; filter:blur(0); } }
+  
+  /* Принудительно убираем блюр (filter: none), чтобы при миксинге цифры были четкими */
+  .number.spin { animation:spinPulse 0.09s linear infinite; filter: none; }
   @keyframes spinPulse { 0%,100% { transform:scale(1); opacity:.55; } 50% { transform:scale(1.03); opacity:1; } }
+  
   .label { position:fixed; top:6vh; left:0; right:0; text-align:center; z-index:4; color:rgba(255,255,255,0.65); font-size:2.4vw; letter-spacing:0.5vw; text-transform:uppercase; font-weight:700; }
   canvas#fx { position:fixed; inset:0; z-index:6; pointer-events:none; }
   .flash { position:fixed; inset:0; background:#fff; opacity:0; z-index:7; pointer-events:none; }
   .flash.go { animation:flashOut 0.4s ease-out forwards; }
   @keyframes flashOut { 0% { opacity:0.9; } 100% { opacity:0; } }
 </style>
+
 </head>
 <body>
   <div class="lamp-row top" id="lampsTop"></div>
