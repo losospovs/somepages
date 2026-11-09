@@ -5,333 +5,146 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Number Randomizer</title>
 <style>
-  :root{
-    /* По умолчанию плотный черный фон и белые цифры */
-    --bg-color: rgb(0, 0, 0);
-    --text-color: rgb(255, 255, 255);
-  }
-  html,body{
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background: var(--bg-color);
-    font-family:'Arial Black','Segoe UI',Helvetica,Arial,sans-serif;
-  }
-
-  /* ---------- Lamp border ---------- */
-  .lamp-row{
-    position:fixed;
-    left:0; right:0;
-    display:flex;
-    justify-content:space-between;
-    padding:0 1.2vw;
-    box-sizing:border-box;
-    z-index:5;
-    pointer-events:none;
-  }
-  .lamp-row.top{ top:1.2vh; }
-  .lamp-row.bottom{ bottom:1.2vh; }
-  .lamp{
-    width:1.6vw;
-    height:1.6vw;
-    min-width:10px;
-    min-height:10px;
-    border-radius:50%;
-    background:#333;
-    box-shadow:0 0 4px rgba(0,0,0,.6);
-    animation:lampFlicker 1.1s infinite ease-in-out;
-  }
-  @keyframes lampFlicker{
-    0%,100%{ opacity:.25; filter:brightness(0.6); }
-    50%{ opacity:1; filter:brightness(1.6); }
-  }
-
-  /* ---------- Number stage ---------- */
-  .stage{
-    position:fixed;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:3;
-  }
-  .number{
-    font-size:42vw;
-    line-height:1;
-    font-weight:900;
-    letter-spacing:-0.02em;
-    color: var(--text-color);
-    -webkit-text-stroke:0.4vw rgba(255,255,255,0.15);
-    text-shadow:
-      0 0 2vw rgba(255,225,77,0.9),
-      0 0 6vw rgba(255,80,220,0.6),
-      0 0 10vw rgba(80,160,255,0.4);
-    transform:scale(0.4);
-    opacity:0;
-    filter:blur(6px);
-    transition:none;
-  }
-  .number.reveal{
-    animation:popIn 0.65s cubic-bezier(.17,.89,.32,1.49) forwards;
-  }
-  @keyframes popIn{
-    0%{ transform:scale(0.3) rotate(-6deg); opacity:0; filter:blur(10px); }
-    60%{ transform:scale(1.12) rotate(2deg); opacity:1; filter:blur(0); }
-    100%{ transform:scale(1) rotate(0deg); opacity:1; filter:blur(0); }
-  }
-  .number.spin{
-    animation:spinPulse 0.09s linear infinite;
-  }
-  @keyframes spinPulse{
-    0%{ transform:scale(1); opacity:.55; }
-    50%{ transform:scale(1.03); opacity:1; }
-    100%{ transform:scale(1); opacity:.55; }
-  }
-
-  .label{
-    position:fixed;
-    top:6vh;
-    left:0; right:0;
-    text-align:center;
-    z-index:4;
-    color:rgba(255,255,255,0.65);
-    font-size:2.4vw;
-    letter-spacing:0.5vw;
-    text-transform:uppercase;
-    font-weight:700;
-  }
-
-  canvas#fx{
-    position:fixed;
-    inset:0;
-    z-index:6;
-    pointer-events:none;
-  }
-
-  .flash{
-    position:fixed;
-    inset:0;
-    background:#fff;
-    opacity:0;
-    z-index:7;
-    pointer-events:none;
-  }
-  .flash.go{
-    animation:flashOut 0.4s ease-out forwards;
-  }
-  @keyframes flashOut{
-    0%{ opacity:0.9; }
-    100%{ opacity:0; }
-  }
+  :root { --bg-color: rgb(0,0,0); --text-color: rgb(255,255,255); }
+  html,body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:var(--bg-color); font-family:'Arial Black','Segoe UI',Arial,sans-serif; }
+  .lamp-row { position:fixed; left:0; right:0; display:flex; justify-content:space-between; padding:0 1.2vw; box-sizing:border-box; z-index:5; pointer-events:none; }
+  .lamp-row.top { top:1.2vh; }
+  .lamp-row.bottom { bottom:1.2vh; }
+  .lamp { width:1.6vw; height:1.6vw; min-width:10px; min-height:10px; border-radius:50%; background:#333; box-shadow:0 0 4px rgba(0,0,0,.6); animation:lampFlicker 1.1s infinite ease-in-out; }
+  @keyframes lampFlicker { 0%,100% { opacity:.25; filter:brightness(0.6); } 50% { opacity:1; filter:brightness(1.6); } }
+  .stage { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; }
+  .number { font-size:42vw; line-height:1; font-weight:900; letter-spacing:-0.02em; color:var(--text-color); -webkit-text-stroke:0.4vw rgba(255,255,255,0.15); text-shadow: 0 0 2vw rgba(255,225,77,0.9), 0 0 6vw rgba(255,80,220,0.6), 0 0 10vw rgba(80,160,255,0.4); transform:scale(0.4); opacity:0; filter:blur(6px); }
+  .number.reveal { animation:popIn 0.65s cubic-bezier(.17,.89,.32,1.49) forwards; }
+  @keyframes popIn { 0% { transform:scale(0.3) rotate(-6deg); opacity:0; filter:blur(10px); } 60% { transform:scale(1.12) rotate(2deg); opacity:1; filter:blur(0); } 100% { transform:scale(1) rotate(0deg); opacity:1; filter:blur(0); } }
+  .number.spin { animation:spinPulse 0.09s linear infinite; }
+  @keyframes spinPulse { 0%,100% { transform:scale(1); opacity:.55; } 50% { transform:scale(1.03); opacity:1; } }
+  .label { position:fixed; top:6vh; left:0; right:0; text-align:center; z-index:4; color:rgba(255,255,255,0.65); font-size:2.4vw; letter-spacing:0.5vw; text-transform:uppercase; font-weight:700; }
+  canvas#fx { position:fixed; inset:0; z-index:6; pointer-events:none; }
+  .flash { position:fixed; inset:0; background:#fff; opacity:0; z-index:7; pointer-events:none; }
+  .flash.go { animation:flashOut 0.4s ease-out forwards; }
+  @keyframes flashOut { 0% { opacity:0.9; } 100% { opacity:0; } }
 </style>
 </head>
 <body>
-
   <div class="lamp-row top" id="lampsTop"></div>
   <div class="lamp-row bottom" id="lampsBottom"></div>
-
   <div class="label" id="rangeLabel"></div>
-
-  <div class="stage">
-    <div class="number" id="number">0</div>
-  </div>
-
+  <div class="stage"><div class="number" id="number">0</div></div>
   <canvas id="fx"></canvas>
   <div class="flash" id="flash"></div>
 
-<script src="config.js"></script>
 <script>
   const params = new URLSearchParams(window.location.search);
-  const cfg = window.RANDOMIZER_CONFIG || {};
+  function pick(p, c, f){ return (p !== null && p !== '' && !isNaN(p)) ? parseInt(p, 10) : f; }
+  function pickBool(p, f){ return p !== null ? p !== '0' : f; }
 
-  let stored = {};
-  try {
-    stored = JSON.parse(localStorage.getItem('randomizerSettings') || '{}');
-  } catch (e) { stored = {}; }
-
-  function pick(paramVal, cfgVal, storedVal, fallback){
-    if (paramVal !== null && paramVal !== '' && !isNaN(paramVal)) return parseInt(paramVal, 10);
-    if (cfgVal !== undefined && cfgVal !== null && cfgVal !== '' && !isNaN(cfgVal)) return parseInt(cfgVal, 10);
-    if (storedVal !== undefined && storedVal !== null && storedVal !== '' && !isNaN(storedVal)) return parseInt(storedVal, 10);
-    return fallback;
-  }
-  function pickBool(paramVal, cfgVal, storedVal, fallback){
-    if (paramVal !== null) return paramVal !== '0';
-    if (cfgVal !== undefined && cfgVal !== null) return !!cfgVal;
-    if (storedVal !== undefined && storedVal !== null) return !!storedVal;
-    return fallback;
-  }
-
-  const rangeMin = pick(params.get('min'), cfg.min, stored.min, 1);
-  const rangeMax = pick(params.get('max'), cfg.max, stored.max, 100);
-  const spinDuration = pick(params.get('spin'), cfg.spin, stored.spin, 900);
-  const SHOW_CONFETTI = pickBool(params.get('confetti'), cfg.confetti, stored.confetti, true);
-  const SHOW_LAMPS = pickBool(params.get('lamps'), cfg.lamps, stored.lamps, true);
-  const SHOW_LABEL = pickBool(params.get('label'), cfg.label, stored.label, true);
+  const rangeMin = pick(params.get('min'), null, 1);
+  const rangeMax = pick(params.get('max'), null, 100);
+  const spinDuration = pick(params.get('spin'), null, 900);
+  const SHOW_CONFETTI = pickBool(params.get('confetti'), true);
+  const SHOW_LAMPS = pickBool(params.get('lamps'), true);
+  const SHOW_LABEL = pickBool(params.get('label'), true);
   const SEED = params.get('seed');
 
-  // Функция перевода строки формата "255.0.0" в CSS формат "rgb(255, 0, 0)"
   function parseDotsToRgb(str) {
     if (!str) return null;
-    const parts = str.split('.');
-    if (parts.length === 3) {
-      const r = parseInt(parts[0], 10);
-      const g = parseInt(parts[1], 10);
-      const b = parseInt(parts[2], 10);
-      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
-        return `rgb(${r}, ${g}, ${b})`;
-      }
+    const p = str.split('.');
+    if (p.length === 3) {
+      const r = parseInt(p[0], 10), g = parseInt(p[1], 10), b = parseInt(p[2], 10);
+      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) return `rgb(${r}, ${g}, ${b})`;
     }
     return null;
   }
 
-  // Считывание кастомных цветов из параметров URL
   if (params.has('bg')) {
-    const parsedBg = parseDotsToRgb(params.get('bg'));
-    if (parsedBg) document.documentElement.style.setProperty('--bg-color', parsedBg);
+    const bg = parseDotsToRgb(params.get('bg'));
+    if (bg) document.documentElement.style.setProperty('--bg-color', bg);
   }
   if (params.has('color')) {
-    const parsedColor = parseDotsToRgb(params.get('color'));
-    if (parsedColor) document.documentElement.style.setProperty('--text-color', parsedColor);
+    const col = parseDotsToRgb(params.get('color'));
+    if (col) document.documentElement.style.setProperty('--text-color', col);
   }
 
-  function randomInRange(lo, hi){
-    if(lo > hi){ [lo, hi] = [hi, lo]; }
-    return Math.floor(Math.random() * (hi - lo + 1)) + lo;
-  }
+  function randomInRange(lo, hi){ return Math.floor(Math.random() * (hi - lo + 1)) + lo; }
 
   let finalNumber = 0;
-
   if (SEED !== null && SEED !== '' && !isNaN(SEED)) {
     finalNumber = parseInt(SEED, 10);
   } else {
     const allNumbers = [];
     for (let i = rangeMin; i <= rangeMax; i++) { allNumbers.push(i); }
-
     const historyKey = `fs_gh_history_${rangeMin}_${rangeMax}`;
-    let usedNumbers = [];
+    let used = [];
     try {
-      const storedHistory = localStorage.getItem(historyKey);
-      if (storedHistory) usedNumbers = JSON.parse(storedHistory);
-    } catch (e) { console.error(e); }
-
-    let availableNumbers = allNumbers.filter(n => !usedNumbers.includes(n));
-
-    if (availableNumbers.length === 0) {
-      let lastPicked = usedNumbers.length > 0 ? usedNumbers[usedNumbers.length - 1] : null;
-      usedNumbers = [];
-      availableNumbers = allNumbers.filter(n => n !== lastPicked);
-      if (availableNumbers.length === 0) availableNumbers = [...allNumbers];
+      const h = localStorage.getItem(historyKey);
+      if (h) used = JSON.parse(h);
+    } catch(e){}
+    let available = allNumbers.filter(n => !used.includes(n));
+    if (available.length === 0) {
+      let last = used.length > 0 ? used[used.length - 1] : null;
+      used = [];
+      available = allNumbers.filter(n => n !== last);
+      if (available.length === 0) available = [...allNumbers];
     }
-
-    const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-    finalNumber = availableNumbers[randomIndex];
-
-    usedNumbers.push(finalNumber);
-    try {
-      localStorage.setItem(historyKey, JSON.stringify(usedNumbers));
-    } catch (e) { console.error(e); }
+    finalNumber = available[Math.floor(Math.random() * available.length)];
+    used.push(finalNumber);
+    try { localStorage.setItem(historyKey, JSON.stringify(used)); } catch(e){}
   }
 
   const numberEl = document.getElementById('number');
-  const labelEl = document.getElementById('rangeLabel');
-  const flashEl = document.getElementById('flash');
+  if (SHOW_LABEL) { document.getElementById('rangeLabel').textContent = rangeMin + ' – ' + rangeMax; }
 
-  if (SHOW_LABEL){
-    labelEl.textContent = rangeMin + ' – ' + rangeMax;
-  }
-
-  /* ---------- Lamp border build ---------- */
   function buildLamps(){
-    const top = document.getElementById('lampsTop');
-    const bottom = document.getElementById('lampsBottom');
-    if (!SHOW_LAMPS){
-      top.style.display = 'none';
-      bottom.style.display = 'none';
-      return;
-    }
+    if (!SHOW_LAMPS) return;
+    const top = document.getElementById('lampsTop'), bottom = document.getElementById('lampsBottom');
     const colors = ['#ff4d6d','#ffe14d','#4dd0ff','#8cff4d','#ff8c4d','#c04dff'];
-    const count = 26;
-    for (let i = 0; i < count; i++){
-      const c = colors[i % colors.length];
-      const lampT = document.createElement('div');
-      lampT.className = 'lamp';
-      lampT.style.background = c;
-      lampT.style.boxShadow = `0 0 1.4vw ${c}`;
+    for (let i = 0; i < 26; i++){
+      const c = colors[i % colors.length], lampT = document.createElement('div');
+      lampT.className = 'lamp'; lampT.style.background = c; lampT.style.boxShadow = `0 0 1.4vw ${c}`;
       lampT.style.animationDelay = (Math.random() * 1.1).toFixed(2) + 's';
       top.appendChild(lampT);
-
       const lampB = lampT.cloneNode();
       lampB.style.animationDelay = (Math.random() * 1.1).toFixed(2) + 's';
       bottom.appendChild(lampB);
     }
   }
 
-  /* ---------- Number spin then reveal ---------- */
   function runNumberSequence(){
     numberEl.classList.add('spin');
-    const spinInterval = setInterval(() => {
-      numberEl.textContent = randomInRange(rangeMin, rangeMax);
-    }, 45);
-
+    const spinInterval = setInterval(() => { numberEl.textContent = randomInRange(rangeMin, rangeMax); }, 45);
     setTimeout(() => {
       clearInterval(spinInterval);
       numberEl.classList.remove('spin');
       numberEl.textContent = finalNumber;
       numberEl.classList.add('reveal');
-
-      flashEl.classList.add('go');
-
-      if (SHOW_CONFETTI) {
-        triggerConfetti();
-      }
+      document.getElementById('flash').classList.add('go');
+      if (SHOW_CONFETTI) triggerConfetti();
     }, spinDuration);
   }
 
-  /* ---------- Confetti ---------- */
   function triggerConfetti() {
-    const canvas = document.getElementById('fx');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    let particles = [];
+    const canvas = document.getElementById('fx'), ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    let pt = [];
     const colors = ['#ff4d6d', '#ffe14d', '#4dd0ff', '#8cff4d', '#ff8c4d', '#c04dff'];
-    
     for (let i = 0; i < 120; i++) {
-      particles.push({
-        x: canvas.width / 2,
-        y: canvas.height * 0.65,
-        vx: (Math.random() - 0.5) * 18,
-        vy: (Math.random() - 1) * 16 - 6,
-        size: Math.random() * 8 + 4,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        gravity: 0.38,
-        rotation: Math.random() * Math.PI,
-        rotationSpeed: (Math.random() - 0.5) * 0.2
-      });
+      pt.push({ x: canvas.width / 2, y: canvas.height * 0.65, vx: (Math.random() - 0.5) * 18, vy: (Math.random() - 1) * 16 - 6, size: Math.random() * 8 + 4, color: colors[Math.floor(Math.random() * colors.length)], gravity: 0.38, rotation: Math.random() * Math.PI, rSpeed: (Math.random() - 0.5) * 0.2 });
     }
-
     function update() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      let anyAlive = false;
-
-      particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += p.gravity;
-        p.rotation += p.rotationSpeed;
-
-        if (p.y < canvas.height + 20) anyAlive = true;
-
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rotation);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-        ctx.restore();
+      let alive = false;
+      pt.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.rotation += p.rSpeed;
+        if (p.y < canvas.height + 20) alive = true;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation); ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); ctx.restore();
       });
+      if (alive) requestAnimationFrame(update);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    update();
+  }
 
-      if (anyAlive) {
+  window.addEventListener('DOMContentLoaded', () => { buildLamps(); runNumberSequence(); });
+</script>
+</body>
+</html>
