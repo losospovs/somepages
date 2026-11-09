@@ -68,29 +68,25 @@
 
   function randomInRange(lo, hi){ return Math.floor(Math.random() * (hi - lo + 1)) + lo; }
 
+    // === ПРОСТОЙ СЛУЧАЙНЫЙ ВЫБОР (СИНХРОННЫЙ ДЛЯ ВСЕХ ОКОН, БЕЗ ЛОКАЛСТОРЕДЖА) ===
   let finalNumber = 0;
   if (SEED !== null && SEED !== '' && !isNaN(SEED) && parseInt(SEED, 10) !== -1) {
     finalNumber = parseInt(SEED, 10);
   } else {
-    const allNumbers = [];
-    for (let i = rangeMin; i <= rangeMax; i++) { allNumbers.push(i); }
-    const historyKey = `fs_gh_history_${rangeMin}_${rangeMax}`;
-    let used = [];
-    try {
-      const h = localStorage.getItem(historyKey);
-      if (h) used = JSON.parse(h);
-    } catch(e){}
-    let available = allNumbers.filter(n => !used.includes(n));
-    if (available.length === 0) {
-      let last = used.length > 0 ? used[used.length - 1] : null;
-      used = [];
-      available = allNumbers.filter(n => n !== last);
-      if (available.length === 0) available = [...allNumbers];
+    // Используем текущее время как «зерно» для генератора.
+    // Округляем до 100мс, чтобы все три окна, открывшись одновременно, получили один и тот же результат.
+    const timeSeed = Math.floor(Date.now() / 100);
+    
+    // Функция псевдослучайного числа на основе времени (алгоритм LCG)
+    function seededRandom(seed) {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
     }
-    finalNumber = available[Math.floor(Math.random() * available.length)];
-    used.push(finalNumber);
-    try { localStorage.setItem(historyKey, JSON.stringify(used)); } catch(e){}
+    
+    const randomFraction = seededRandom(timeSeed + rangeMin + rangeMax);
+    finalNumber = Math.floor(randomFraction * (rangeMax - rangeMin + 1)) + rangeMin;
   }
+
 
   const numberEl = document.getElementById('number');
   if (SHOW_LABEL) { document.getElementById('rangeLabel').textContent = rangeMin + ' – ' + rangeMax; }
