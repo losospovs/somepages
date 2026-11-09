@@ -67,7 +67,6 @@
 
   function randomInRange(lo, hi){ return Math.floor(Math.random() * (hi - lo + 1)) + lo; }
 
-  // === БЛОК ПРОВЕРКИ СИДА И СЛУЧАЙНОГО ВЫБОРА ===
   let finalNumber = 0;
   if (SEED !== null && SEED !== '' && !isNaN(SEED) && parseInt(SEED, 10) !== -1) {
     finalNumber = parseInt(SEED, 10);
@@ -91,7 +90,6 @@
     used.push(finalNumber);
     try { localStorage.setItem(historyKey, JSON.stringify(used)); } catch(e){}
   }
-
 
   const numberEl = document.getElementById('number');
   if (SHOW_LABEL) { document.getElementById('rangeLabel').textContent = rangeMin + ' – ' + rangeMax; }
