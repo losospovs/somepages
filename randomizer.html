@@ -189,11 +189,11 @@
   if (SEED !== null && SEED !== '' && !isNaN(SEED)) {
     finalNumber = parseInt(SEED, 10);
   } else {
-    const allNumbers =;
+    const allNumbers = [];
     for (let i = rangeMin; i <= rangeMax; i++) { allNumbers.push(i); }
 
     const historyKey = `fs_gh_history_${rangeMin}_${rangeMax}`;
-    let usedNumbers =;
+    let usedNumbers = [];
     try {
       const storedHistory = localStorage.getItem(historyKey);
       if (storedHistory) usedNumbers = JSON.parse(storedHistory);
@@ -203,7 +203,7 @@
 
     if (availableNumbers.length === 0) {
       let lastPicked = usedNumbers.length > 0 ? usedNumbers[usedNumbers.length - 1] : null;
-      usedNumbers =;
+      usedNumbers = [];
       availableNumbers = allNumbers.filter(n => n !== lastPicked);
       if (availableNumbers.length === 0) availableNumbers = [...allNumbers];
     }
@@ -279,7 +279,7 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    let particles =;
+    let particles = [];
     const colors = ['#ff4d6d', '#ffe14d', '#4dd0ff', '#8cff4d', '#ff8c4d', '#c04dff'];
     
     for (let i = 0; i < 120; i++) {
